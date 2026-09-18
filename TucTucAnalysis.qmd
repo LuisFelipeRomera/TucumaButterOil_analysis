@@ -106,6 +106,10 @@ Here, we're able to see that the coefficients $\beta_{13}$ and $\beta_{23}$ are 
 
 ```{r}
 #| dev: png
+#| fig-width: 6.5
+#| fig-height: 5
+#| out-width: "100%"
+
 
 PDIEff <- ModelEff(nfac = 3,
                    mod = 2,
@@ -124,6 +128,10 @@ Now, let's plot a ternary graph to access how the PDI is molded by the component
 
 ```{r}
 #| dev: png
+#| fig-width: 6.5
+#| fig-height: 5
+#| out-width: "100%"
+
 
 
 PDIPlot <- ModelPlot(model = quadMod,
@@ -194,6 +202,10 @@ The coefficients demonstrate that the components by themselves tends to contribu
 
 ```{r}
 #| dev: png
+#| fig-width: 6.5
+#| fig-height: 5
+#| out-width: "100%"
+
 
 
 sizeEff <- ModelEff(nfac = 3,
@@ -209,6 +221,10 @@ Analyzing the Piepel effect directions, we're able to see a pattern similar to t
 
 ```{r}
 #| dev: png
+#| fig-width: 6.5
+#| fig-height: 5
+#| out-width: "100%"
+
 
 
 sizePlot <- ModelPlot(model = quadModSize,
