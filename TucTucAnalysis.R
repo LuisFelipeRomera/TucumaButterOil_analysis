@@ -6,6 +6,12 @@ dataTucTuc <- read.csv("NanoTucumaTucuma.csv", header = TRUE, sep = ",")
 install.packages("mixexp")
 library(mixexp)
 
+#pacote performance
+library(performance)
+
+#Pacote Dharma
+library(DHARMa)
+
 ?MixModel
 
 #Abrir tabela em janela lateral
@@ -27,6 +33,11 @@ lin <- MixModel(
 summary(lin)
 anova(lin)
 
+par(mfrow = c(2, 2))
+plot(lin)
+
+check_model(lin)
+
 #modelo de Scheffe quadratico
 
 quad <- MixModel(
@@ -39,6 +50,11 @@ quad <- MixModel(
 summary(quad)
 anova(quad)
 
+
+plot(quad)
+check_model(quad)
+plot(simulateResiduals(quad))
+
 anova(lin,quad)
 
 #modelo cubico especial
@@ -50,10 +66,15 @@ cub <- MixModel(
   3
 )
 
+summary(cub)
 anova(cub)
 anova(quad,cub)
 
+plot(cub)
+
 #Grafico ternario
+
+?ModelPlot
 
 terGraf <- ModelPlot(
   model = quad,
@@ -67,7 +88,11 @@ terGraf <- ModelPlot(
   pseudo = TRUE,
   fill = TRUE,
   #color.palette = ,
-  main = "TucTuc PDI"
+  main = "TucTuc PDI",
+  axislabs = c("Butter", "Oil", "Surfactant"),
+  axislab.offset = 0.1,
+  cornerlabs = c("", "", ""),
+  grid = TRUE
 )
 
 ??color.palette
@@ -75,6 +100,8 @@ terGraf <- ModelPlot(
 ?`palette`
 
 palette.pals()
+
+par(mfrow = c(1, 1))
 
 ?ModelEff
 

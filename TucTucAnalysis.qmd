@@ -1,0 +1,232 @@
+---
+title: "TucTuc Analysis"
+author: "Luís Felipe Romera"
+format: pdf
+editor: visual
+---
+
+# TucTuc Analysis
+
+In this document I'm going to adjust the data of **TucTuc Nanostructured Lipid Carrier** into a **multiple regression**, known as *scheffé model*.
+
+```{r}
+library(magick)
+
+getwd()
+
+data <- read.csv("NanoTucumaTucuma.csv")
+
+data
+
+
+```
+## Regression models
+
+First, let's fit a *linear Scheffé model*, given by:
+
+$$
+\sum_{i=1}^{q} \beta_i x_i + \epsilon
+$$
+
+```{r}
+#| warning: false
+#| message: false
+library(mixexp)
+?MixModel
+
+linMod <- MixModel(data,
+         response = "PDI",
+         mixcomps = c("Tucuma", "Tucuma.1", "Brijo10"),
+         model = 1)
+
+summary(linMod)
+
+anova(linMod)
+```
+It is possible to see that only the coefficient for **Tucumã butter** have a significant *p-value* for the **t** estimate, meaning that it's the only coefficient that is significant different from zero, contributing individually to the model.
+
+In the *ANOVA table*, **Brij O10** does not have a significant *p-value* for the **F** estimate, meaning that a model without it would still explain the same variance.
+
+Also, we can see that the *corrected Multiple R-squared* is only 0.48 approximately, indicating **lack of fit**.
+
+____
+
+Now, let's fit a *quadratic* model, given by:
+
+$$
+\sum_{i=1}^{q} \beta_i x_i \sum_{i=1}^{q-1} \sum_{j=i+1}^{q} \beta_{ij} x_i x_j + \epsilon
+$$
+
+```{r}
+quadMod <- MixModel(data,
+         response = "PDI",
+         mixcomps = c("Tucuma", "Tucuma.1", "Brijo10"),
+         model = 2)
+
+summary(quadMod)
+
+anova(quadMod)
+```
+The *quadratic model* seems to fit the data better than the *linear model*. The coefficient for **Tucumã butter** and the coefficient for the interaction of **Tucumã butter** and **Tucumã oil** are the only ones that don't have a significant *p-value* for the *t* estimate. The *Corrected Multiple R-squared* is of approximately 0.88, which indicates good fit and all the coefficients have a significative *p-value* for the **F** estimate.
+
+---
+
+Now lets try fitting a *scheffé's special cubic model*, given by:
+
+$$
+\sum_{i=1}^{q} \beta_i x_i \sum_{i=1}^{q-1} \sum_{j=i+1}^{q} \beta_{ij} x_i x_j + \sum_{i=1}^{q-2} \sum_{j=i+1}^{q-1} \sum_{k=j+i}^{q} \beta_{ijk} x_i x_j x_k + \epsilon
+$$
+
+to see if it explains the variance even better than the *quadratic model*.
+
+```{r}
+cubMod <- MixModel(data,
+         response = "PDI",
+         mixcomps = c("Tucuma", "Tucuma.1", "Brijo10"),
+         model = 4)
+
+summary(cubMod)
+
+anova(cubMod)
+
+anova(quadMod, cubMod)
+```
+
+In the *special cubic model*, none of the coefficients have a significant *p-value* for the **t** estimate, and some doesn't have significant *p-values* for the **F** estimate, although the *Corrected Multiple R-squared* is greater than the quadratic model, indicating **overfitting**. Nonetheless, the *anova* performed showed that the *special cubic model* does not explain the variance significantly better than the *quadratic model*, indicating that the *quadratic model* is the best fit for the data.
+
+---
+
+Hence, substituting the $\beta$ for the estimated coefficients, the model presents itself as:
+
+$PDI = 1.64x_1 + 0.92x_2 + 1.76x_3 + 0.2x_1x_2 - 6.87x_1x_3 - 4.86x_2x_3$
+
+$x_1$ being **Tucumã oil**, $x_2$ being **Tucumã butter** and $x_3$ being **Brij O10**.
+
+Here, we're able to see that the coefficients $\beta_{13}$ and $\beta_{23}$ are the only ones that contribute to a lower PDI. Also, they are the coefficients that have the greatest effect on the model. Therefore, the interaction between the Tucumã butter and the Tucumã oil with the surfactant Brij O10 has great influence in bringing the PDI value down. But the coefficient by itself does not indicate the response, because it is also dependent in which direction the other components will variate. For that matter, plotting the *Piepel effects directions* is fundamental to understand what happens to the response once we dislocate the formulation towards a component.
+
+```{r}
+#| dev: png
+
+PDIEff <- ModelEff(nfac = 3,
+                   mod = 2,
+                   dir = 1,
+                   ufunc = quadMod,
+                   dimensions = list(x1="Tucuma", x2="Tucuma.1", x3="Brijo10"),
+                   lc = c(0.165, 0.1665, 0.165),
+                   uc = c(0.5, 0.5, 0.5835)
+                   )
+```
+The Piepel Effect direction plot indicates that shifting the formulation in the direction of the surfactant and away from the other components tends to form more homogenic particles, but only till the parabole formed by the surfactant effect line reaches its minimum point, after that, the particles starts a heterogenic tendency again. Plotting a ternary graph of the PDI will help to visualize in which proportions of the components the nanoparticles tend to be more homogenic.
+
+---
+
+Now, let's plot a ternary graph to access how the PDI is molded by the components of the nanoparticle.
+
+```{r}
+#| dev: png
+
+
+PDIPlot <- ModelPlot(model = quadMod,
+                     dimensions = list(x1="Tucuma", x2="Tucuma.1", x3="Brijo10"),
+                     lims = c(0.165, 0.5, 0.1665, 0.5, 0.165, 0.5835),
+                     contour = TRUE,
+                     pseudo = TRUE,
+                     fill = TRUE,
+                     main = "PDI TucTuc",
+                     axislabs = c("Tucumã oil", "Tucumã butter", "Brij O10"),
+                     axislab.offset = 0.1,
+                     cornerlabs = c("", "", ""),
+                     grid = TRUE,
+                     colorkey = TRUE,
+                     labels = TRUE,
+                     label.style = "mixed"
+                     )
+```
+
+Analyzing the ternary graph, and according to the model fitted, we're able to see a region where the components proportions tend to generate lower PDI values. Hence, the optimal formulation, in seeking the lowest PDI, would have **27% Tucumã oil**, **27% Tucumã butter** and **46% Brij O10** in this part of the mixture.
+
+---
+
+# Size
+
+Now, let's do the same analysis for the size response.
+
+---
+
+This time I'll do the analysis quicker since the explanation was given in the **PDI** part.
+
+```{r}
+linModSize <- MixModel(data,
+         response = "Size",
+         mixcomps = c("Tucuma", "Tucuma.1", "Brijo10"),
+         model = 1)
+
+summary(linModSize)
+
+anova(linModSize)
+
+quadModSize <- MixModel(data,
+         response = "Size",
+         mixcomps = c("Tucuma", "Tucuma.1", "Brijo10"),
+         model = 2)
+
+summary(quadModSize)
+
+anova(quadModSize)
+
+cubModSize <- MixModel(data,
+         response = "Size",
+         mixcomps = c("Tucuma", "Tucuma.1", "Brijo10"),
+         model = 4)
+
+summary(cubModSize)
+
+anova(cubModSize)
+
+anova(linModSize, quadModSize)
+```
+The analysis of the statistical parameters of the models indicates that the **quadratic model** presents the best fit for the data. Thus, the model becomes:
+
+$$
+Size(nm) = 439x_1 + 1044x_2 + 748x_3 - 238x_1x_2 - 2042x_1x_3 - 3742x_2x_3
+$$
+The coefficients demonstrate that the components by themselves tends to contribute to a higher size, whereas the interaction between the components tends to contribute to a lower size, with the interaction of the lipids with the surfactant having the greatest coefficient in module, indicating a strong effect towards reducing the size.
+
+```{r}
+#| dev: png
+
+
+sizeEff <- ModelEff(nfac = 3,
+                   mod = 2,
+                   dir = 1,
+                   ufunc = quadModSize,
+                   dimensions = list(x1="Tucuma", x2="Tucuma.1", x3="Brijo10"),
+                   lc = c(0.165, 0.1665, 0.165),
+                   uc = c(0.5, 0.5, 0.5835)
+                   )
+```
+Analyzing the Piepel effect directions, we're able to see a pattern similar to the PDI, where dislocating towards the surfactant and away from the lipids tends to generate a smaller size, till the inflection point on the parable described by the surfactant effect direction.
+
+```{r}
+#| dev: png
+
+
+sizePlot <- ModelPlot(model = quadModSize,
+                     dimensions = list(x1="Tucuma", x2="Tucuma.1", x3="Brijo10"),
+                     lims = c(0.165, 0.5, 0.1665, 0.5, 0.165, 0.5835),
+                     contour = TRUE,
+                     at = c(-100, 10, 20, 50, 100, 150, 200, 250, 300, 350, 500),
+                     pseudo = TRUE,
+                     fill = TRUE,
+                     main = "PDI TucTuc",
+                     axislabs = c("Tucumã oil", "Tucumã butter", "Brij O10"),
+                     axislab.offset = 0.1,
+                     cornerlabs = c("", "", ""),
+                     grid = TRUE,
+                     colorkey = TRUE,
+                     labels = TRUE,
+                     label.style = "align"
+                     )
+```
+
+Analyzing the ternary graph, we can find an optimal region for a small size, according to the model, around **27% of Tucumã oil**, **27% of Tucumã butter** and **46% of Brij O10**, similar to the region of optimal PDI.
